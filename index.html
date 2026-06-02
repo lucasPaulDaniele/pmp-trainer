@@ -327,7 +327,7 @@ var pool = [];
 var idx = 0;
 var answers = {};
 var missed = [];
-var history = [];
+var sessionHistory = [];
 var timerId = null;
 var timeLeft = 0;
 
@@ -666,7 +666,7 @@ function finishSession() {
   }
   missed=newMissed;
   var total=pool.length, pct=Math.round(correct/total*100);
-  history.unshift({date:Date.now(),pct:pct,correct:correct,total:total,mode:mode});
+  sessionHistory.unshift({date:Date.now(),pct:pct,correct:correct,total:total,mode:mode});
   // Résultats
   el('scoreBig').textContent=pct+'%';
   el('scoreFrac').textContent=correct+' / '+total+' bonnes réponses';
@@ -706,10 +706,10 @@ function renderStats() {
     '<div class="stat-box"><div class="stat-n">'+BANK.filter(function(q){return q.lesson===2;}).length+'</div><div class="stat-l">Questions L2</div></div>'+
     '<div class="stat-box"><div class="stat-n">'+missed.length+'</div><div class="stat-l">Mes erreurs</div></div>';
   var hl=el('histList'); if(!hl)return;
-  if(!history.length){hl.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px;font-size:14px">Aucune session encore.</div>';return;}
+  if(!sessionHistory.length){hl.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px;font-size:14px">Aucune session encore.</div>';return;}
   hl.innerHTML='';
-  for(var i=0;i<history.length;i++){
-    var h=history[i];
+  for(var i=0;i<sessionHistory.length;i++){
+    var h=sessionHistory[i];
     var d=new Date(h.date);
     var ds=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     var col=h.pct>=70?'var(--ok)':'var(--bad)';
@@ -717,7 +717,7 @@ function renderStats() {
   }
 }
 function resetStats() {
-  if(confirm('Effacer l\'historique et les erreurs ?')){missed=[];history=[];renderStats();el('missedCount').textContent='0';}
+  if(confirm('Effacer l\'historique et les erreurs ?')){missed=[];sessionHistory=[];renderStats();el('missedCount').textContent='0';}
 }
 
 /* ---- INIT ---- */
