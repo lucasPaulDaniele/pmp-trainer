@@ -167,7 +167,42 @@ nav button.on{background:var(--or-dim);color:var(--or);border-color:rgba(241,90,
 .hist-row:last-child{border-bottom:none}
 .hist-row .hp{font-weight:800;font-size:15px}
 
-footer{text-align:center;color:var(--dim);font-size:11px;margin-top:28px;line-height:1.8}
+/* FLASHCARDS */
+.fc-config-grid{display:grid;gap:10px;margin-bottom:14px}
+.fc-mode-btn{border:1px solid var(--brd);background:rgba(255,255,255,.03);border-radius:12px;padding:14px;text-align:left;color:var(--tx);width:100%}
+.fc-mode-btn.on{border-color:rgba(241,90,41,.5);background:var(--or-dim)}
+.fc-mode-btn .mt{font-weight:700;font-size:13.5px}
+.fc-mode-btn.on .mt{color:var(--or)}
+.fc-mode-btn .md{font-size:12px;color:var(--soft);margin-top:4px}
+
+.fc-scene{perspective:1200px;width:100%;min-height:280px;margin:18px 0;cursor:pointer}
+.fc-inner{position:relative;width:100%;min-height:280px;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-inner.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;top:0;left:0;width:100%;min-height:280px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;padding:28px 22px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:1px solid var(--brd)}
+.fc-face.front{background:linear-gradient(135deg,var(--card),var(--card2));box-shadow:0 4px 28px rgba(0,0,0,.4)}
+.fc-face.back{background:linear-gradient(135deg,var(--card2),#1a3565);transform:rotateY(180deg);box-shadow:0 4px 28px rgba(0,0,0,.4)}
+.fc-tag{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--or);margin-bottom:10px}
+.fc-term{font-size:22px;font-weight:800;line-height:1.3;letter-spacing:-.2px;color:var(--tx);margin-bottom:6px}
+.fc-sub{font-size:13px;color:var(--soft);margin-top:4px}
+.fc-hint{font-size:12px;color:var(--dim);margin-top:16px;display:flex;align-items:center;gap:6px}
+.fc-def{font-size:15px;font-weight:600;line-height:1.6;color:var(--tx)}
+.fc-ref{font-size:12px;color:var(--teal);margin-top:12px;font-weight:600}
+
+.fc-progress{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.fc-bar{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.fc-bar-inner{height:100%;background:linear-gradient(90deg,var(--or),#ff8a60);border-radius:999px;transition:width .3s}
+.fc-counter{font-size:13px;font-weight:700;color:var(--soft)}
+
+.fc-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+.fc-btn-ok{border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:inherit;background:rgba(39,174,96,.15);color:var(--ok);border:1px solid rgba(39,174,96,.35);cursor:pointer}
+.fc-btn-ok:hover{background:rgba(39,174,96,.25)}
+.fc-btn-ko{border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;font-family:inherit;background:rgba(231,76,60,.15);color:var(--bad);border:1px solid rgba(231,76,60,.35);cursor:pointer}
+.fc-btn-ko:hover{background:rgba(231,76,60,.25)}
+
+.fc-results-hero{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:26px;margin-bottom:14px;text-align:center}
+.fc-big-score{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.fc-flip-hint{font-size:13px;color:var(--dim);text-align:center;margin-top:-10px;margin-bottom:8px}
+
 
 @media(max-width:540px){
   .modes{grid-template-columns:1fr}
@@ -195,6 +230,7 @@ footer{text-align:center;color:var(--dim);font-size:11px;margin-top:28px;line-he
   </div>
   <nav>
     <button id="navSetup" class="on" onclick="showView('setup')">Réviser</button>
+    <button id="navCards" onclick="showView('flashcards')">Cartes</button>
     <button id="navStats" onclick="showView('stats')">Progression</button>
   </nav>
 </header>
@@ -308,7 +344,110 @@ footer{text-align:center;color:var(--dim);font-size:11px;margin-top:28px;line-he
   </div>
 </div>
 
+<!-- FLASHCARDS CONFIG -->
+<div id="view-flashcards" class="view">
+  <div class="hero">
+    <h1>Mode <em>Cartes</em></h1>
+    <p>Notion → Définition ou Définition → Notion · Flip 3D · Tu décides si tu as bon</p>
+  </div>
+
+  <div class="card">
+    <div class="sec">1 · Groupes ECO</div>
+    <div class="lessons" id="fcLessonList"></div>
+  </div>
+
+  <div class="card">
+    <div class="sec">2 · Sens des cartes</div>
+    <div class="fc-config-grid" id="fcModeList">
+      <button class="fc-mode-btn on" id="fcModeTermDef" onclick="setFcMode('term-def')">
+        <div class="mt">Terme → Définition</div>
+        <div class="md">Recto : la notion. Verso : la définition.</div>
+      </button>
+      <button class="fc-mode-btn" id="fcModeDefTerm" onclick="setFcMode('def-term')">
+        <div class="mt">Définition → Terme</div>
+        <div class="md">Recto : la définition. Verso : la notion.</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec">3 · Volume & filtres</div>
+    <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--soft)">Cartes</div>
+    <div class="stepper">
+      <button onclick="changeFcN(-10)">−</button>
+      <span class="val" id="fcNVal">20</span>
+      <button onclick="changeFcN(10)">+</button>
+    </div>
+    <div style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:14px" id="fcAvailTxt">— disponibles</div>
+    <div class="divider"></div>
+    <div style="font-size:12px;font-weight:600;color:var(--soft);margin-bottom:7px">Domaines</div>
+    <div class="chips" id="fcDomChips"></div>
+    <div style="font-size:12px;font-weight:600;color:var(--soft);margin-bottom:7px">Difficulté</div>
+    <div class="chips" id="fcDiffChips"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" id="fcStartBtn" onclick="startFlashcards()">Démarrer →</button>
+  </div>
+  <p id="fcSetupNote" style="color:var(--bad);font-size:13px;margin-top:10px"></p>
+</div>
+
+<!-- FLASHCARDS SESSION -->
+<div id="view-fc-session" class="view">
+  <div class="fc-progress">
+    <div class="fc-bar"><div class="fc-bar-inner" id="fcProgBar" style="width:0%"></div></div>
+    <span class="fc-counter" id="fcCounterTxt">1 / 20</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--soft);font-weight:600;margin-bottom:16px">
+    <span>✓ <span id="fcOkCount">0</span> Connu</span>
+    <span>✗ <span id="fcKoCount">0</span> À revoir</span>
+  </div>
+
+  <div class="fc-scene" id="fcScene" onclick="flipCard()">
+    <div class="fc-inner" id="fcInner">
+      <div class="fc-face front" id="fcFront">
+        <div class="fc-tag" id="fcFrontTag">Notion</div>
+        <div class="fc-term" id="fcFrontTerm">—</div>
+        <div class="fc-sub" id="fcFrontSub"></div>
+        <div class="fc-hint">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Tap pour retourner
+        </div>
+      </div>
+      <div class="fc-face back" id="fcBack">
+        <div class="fc-tag" id="fcBackTag">Définition</div>
+        <div class="fc-def" id="fcBackDef">—</div>
+        <div class="fc-ref" id="fcBackRef"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-flip-hint" id="fcFlipHint" style="opacity:0">Retournée · Avais-tu bon ?</div>
+
+  <div class="fc-actions" id="fcActions" style="display:none">
+    <button class="fc-btn-ok" onclick="fcJudge(true)">✓ Connu</button>
+    <button class="fc-btn-ko" onclick="fcJudge(false)">✗ À revoir</button>
+  </div>
+
+  <div style="text-align:center;margin-top:18px">
+    <button class="btn-g" style="font-size:13px;padding:8px 16px" onclick="quitFlashcards()">Quitter</button>
+  </div>
 <footer>Outil de révision personnel · non affilié au PMI<br>PMP® et PMBOK® sont des marques du Project Management Institute</footer>
+  <div class="fc-results-hero">
+    <div class="fc-big-score" id="fcScoreBig" style="color:var(--ok)">0%</div>
+    <div style="color:var(--soft);font-size:14px;font-weight:600;margin-top:4px" id="fcScoreFrac"></div>
+    <div style="margin-top:10px;font-size:13px;color:var(--soft)" id="fcScoreMsg"></div>
+  </div>
+  <div class="card">
+    <div class="sec">Cartes à revoir</div>
+    <div id="fcReviewList"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="showView('flashcards')">Nouvelle session</button>
+    <button class="btn-g" onclick="startFcMissed()">Retravailler les ✗</button>
+  </div>
+</div>
+
+
 </div>
 
 <script>
@@ -375,7 +514,7 @@ function ensureAns(qid) {
 
 /* ---- NAVIGATION ---- */
 function showView(v) {
-  var views = ['setup','quiz','results','stats'];
+  var views = ['setup','quiz','results','stats','flashcards','fc-session'];
   for (var i=0;i<views.length;i++) {
     var ve = el('view-'+views[i]);
     if (ve) { ve.className = ve.className.replace(' active','').replace('active','').trim(); }
@@ -383,9 +522,11 @@ function showView(v) {
   var active = el('view-'+v);
   if (active) active.className = (active.className + ' active').trim();
   el('navSetup').className = v==='setup'?'on':'';
+  el('navCards').className = v==='flashcards'?'on':'';
   el('navStats').className = v==='stats'?'on':'';
   window.scrollTo(0,0);
   if (v==='stats') renderStats();
+  if (v==='flashcards') renderFcSetup();
 }
 
 /* ---- SETUP RENDER ---- */
@@ -698,13 +839,327 @@ function finishSession() {
   showView('results');
 }
 
+/* ---- FLASHCARD BANK ---- */
+var FLASHCARD_BANK = [
+  /* ===== LOT 1 : FONDATIONS PMP (Leçons 1–3) ===== */
+  {id:"FC-001",lesson:1,domain:"Processus",difficulty:1,term:"Projet",def:"Initiative temporaire menée dans un contexte unique pour créer de la valeur pour l'organisation et ses parties prenantes.",pmbok:"Définition d'un projet"},
+  {id:"FC-002",lesson:1,domain:"Processus",difficulty:1,term:"Opération",def:"Activité récurrente, standardisée et continue, sans contexte unique — à l'opposé d'un projet.",pmbok:"Projet vs opérations"},
+  {id:"FC-003",lesson:1,domain:"Processus",difficulty:2,term:"Réussite du projet (PMBOK 8)",def:"Perception partagée par les bénéficiaires, parties prenantes et participants que la valeur créée valait l'effort investi.",pmbok:"Définition de la réussite"},
+  {id:"FC-004",lesson:1,domain:"Environnement",difficulty:2,term:"OPM (Management de projet organisationnel)",def:"Cadre d'exécution de la stratégie qui coordonne la gestion des portefeuilles, programmes, projets et opérations vers les objectifs stratégiques.",pmbok:"OPM"},
+  {id:"FC-005",lesson:1,domain:"Environnement",difficulty:1,term:"Portefeuille",def:"Ensemble de projets, programmes, portefeuilles subsidiaires et opérations géré collectivement pour atteindre des objectifs stratégiques.",pmbok:"Portefeuille"},
+  {id:"FC-006",lesson:1,domain:"Environnement",difficulty:1,term:"Programme",def:"Groupe de projets connexes coordonnés pour produire des bénéfices qu'aucun projet ne pourrait obtenir séparément.",pmbok:"Programme"},
+  {id:"FC-007",lesson:1,domain:"Environnement",difficulty:2,term:"Structure fonctionnelle",def:"Organisation où l'allégeance va au département fonctionnel : le CP a peu d'autorité, les membres travaillent à temps partiel sur le projet.",pmbok:"Structure fonctionnelle"},
+  {id:"FC-008",lesson:1,domain:"Environnement",difficulty:2,term:"Structure matricielle",def:"Organisation avec double reporting : les membres rendent compte à la fois au responsable fonctionnel et au chef de projet (allégeance partagée).",pmbok:"Structure matricielle"},
+  {id:"FC-009",lesson:1,domain:"Environnement",difficulty:2,term:"Structure orientée projet",def:"Organisation où l'allégeance va au projet : le CP a une autorité élevée, les membres travaillent préférentiellement à temps plein.",pmbok:"Structure orientée projet"},
+  {id:"FC-010",lesson:1,domain:"Environnement",difficulty:2,term:"Structure composite",def:"Combinaison de plusieurs types de structures coexistant dans une même organisation selon les besoins des projets.",pmbok:"Structure composite"},
+  {id:"FC-011",lesson:1,domain:"Environnement",difficulty:1,term:"PMO (Bureau des projets)",def:"Entité organisationnelle qui centralise et coordonne la gestion des portefeuilles, programmes et/ou projets ; standardise la gouvernance et partage ressources, méthodes et outils.",pmbok:"Bureau des projets"},
+  {id:"FC-012",lesson:1,domain:"Environnement",difficulty:2,term:"PMO de soutien",def:"Type de PMO au rôle consultatif : fournit modèles, méthodologies et coaching avec un degré de contrôle faible.",pmbok:"Types de PMO"},
+  {id:"FC-013",lesson:1,domain:"Environnement",difficulty:2,term:"PMO de contrôle",def:"Type de PMO qui exige la conformité aux cadres et conduit des audits ; degré de contrôle modéré.",pmbok:"Types de PMO"},
+  {id:"FC-014",lesson:1,domain:"Environnement",difficulty:2,term:"PMO directif",def:"Type de PMO qui prend en charge et dirige directement les projets ; degré de contrôle le plus élevé.",pmbok:"Types de PMO"},
+  {id:"FC-015",lesson:1,domain:"Personnes",difficulty:2,term:"Centre d'excellence agile",def:"Type de PMO qui coache les équipes, développe l'état d'esprit et les capacités agiles dans l'organisation, et guide les commanditaires et Product Owners.",pmbok:"Centre d'excellence agile"},
+  {id:"FC-016",lesson:2,domain:"Processus",difficulty:1,term:"Approche prédictive",def:"Approche de développement où les phases s'enchaînent de façon séquentielle ; le périmètre est stable, la valeur est livrée globalement en fin de projet.",pmbok:"Approche prédictive"},
+  {id:"FC-017",lesson:2,domain:"Processus",difficulty:1,term:"Approche adaptative (agile)",def:"Approche de développement par itérations courtes où le produit évolue selon les retours des parties prenantes ; valeur livrée de façon incrémentale et itérative.",pmbok:"Approche adaptative"},
+  {id:"FC-018",lesson:2,domain:"Processus",difficulty:2,term:"Approche hybride",def:"Toute combinaison d'éléments prédictifs et adaptatifs : par exemple une échéance ferme (prédictif) avec un contenu évolutif (adaptatif).",pmbok:"Approche hybride"},
+  {id:"FC-019",lesson:2,domain:"Processus",difficulty:2,term:"Cadence itérative",def:"Rythme de développement qui retravaille un même livrable par cycles successifs jusqu'à le rendre satisfaisant.",pmbok:"Itératif"},
+  {id:"FC-020",lesson:2,domain:"Processus",difficulty:2,term:"Cadence incrémentale",def:"Rythme de développement qui ajoute successivement des parties finies et utilisables jusqu'à constituer le produit complet.",pmbok:"Incrémental"},
+  {id:"FC-021",lesson:2,domain:"Processus",difficulty:2,term:"Flux continu (Kanban)",def:"Cadence agile sans itérations fixes où le travail est tiré au fur et à mesure selon la capacité disponible, optimisant le débit et réduisant le gaspillage.",pmbok:"Ordonnancement des flux"},
+  {id:"FC-022",lesson:2,domain:"Personnes",difficulty:2,term:"Product Owner",def:"Rôle adaptatif qui contrôle la proposition de valeur et priorise le backlog produit ; l'équipe exécute et s'auto-organise.",pmbok:"Rôles adaptatifs"},
+  {id:"FC-023",lesson:2,domain:"Personnes",difficulty:2,term:"Scrum Master",def:"Rôle de processus en approche adaptative qui facilite le cadre Scrum, défend l'équipe face aux obstacles et assure le respect des pratiques.",pmbok:"Scrum Master"},
+  {id:"FC-024",lesson:2,domain:"Personnes",difficulty:2,term:"Disciplined Agile (DA)",def:"Boîte à outils PMI aidant les équipes à choisir et adapter leur façon de travailler au contexte spécifique du projet, sans méthode prescriptive unique.",pmbok:"PMI Disciplined Agile"},
+  {id:"FC-025",lesson:3,domain:"Processus",difficulty:2,term:"Adaptation (Tailoring)",def:"Ajustement délibéré de l'approche, de la gouvernance et des processus pour les rendre appropriés à l'environnement et au travail, de façon itérative et continue.",pmbok:"Adaptation"},
+  {id:"FC-026",lesson:3,domain:"Personnes",difficulty:2,term:"Manifeste agile — 4 valeurs",def:"1. Individus et interactions > processus et outils. 2. Produits opérationnels > documentation exhaustive. 3. Collaboration client > négociation contractuelle. 4. Adaptation au changement > suivi d'un plan.",pmbok:"Manifeste agile"},
+  {id:"FC-027",lesson:3,domain:"Personnes",difficulty:2,term:"Principe agile — simplicité",def:"L'art de maximiser la quantité de travail non effectué : identifier et supprimer le travail sans valeur, ne réaliser que ce qui contribue réellement aux objectifs.",pmbok:"Principes agiles"},
+  {id:"FC-028",lesson:3,domain:"Personnes",difficulty:2,term:"Principe agile — rythme durable",def:"Les processus agiles favorisent un développement soutenable : les parties prenantes maintiennent un rythme constant indéfiniment, sans surchauffe ni épuisement.",pmbok:"Principes agiles"},
+  {id:"FC-029",lesson:3,domain:"Personnes",difficulty:2,term:"Principe agile — mesure du progrès",def:"Le principal indicateur de progrès est un produit fonctionnel livré et démontrable, qui prouve que de la valeur réelle a été créée.",pmbok:"Principes agiles"},
+  {id:"FC-030",lesson:3,domain:"Processus",difficulty:2,term:"Vision holistique (principe PMBOK 8)",def:"Considérer le projet comme un système aux éléments interdépendants pour renforcer la performance dans l'ensemble des domaines de performance.",pmbok:"Principes PMBOK 8"},
+  {id:"FC-031",lesson:3,domain:"Personnes",difficulty:2,term:"Leader responsable (principe PMBOK 8)",def:"Agir avec intendance, intégrité et responsabilité dans l'intérêt durable des parties prenantes — y compris divulguer les non-conformités de façon transparente.",pmbok:"Principes PMBOK 8"},
+  {id:"FC-032",lesson:3,domain:"Processus",difficulty:2,term:"Qualité intégrée (principe PMBOK 8)",def:"Construire la qualité dès la conception et tout au long du travail (build quality in), plutôt que de se limiter à l'inspection finale.",pmbok:"Principes PMBOK 8"},
+  {id:"FC-033",lesson:3,domain:"Environnement",difficulty:2,term:"Durabilité (principe PMBOK 8)",def:"Prendre en compte les impacts à long terme — environnementaux, sociaux et économiques — dans toutes les décisions du projet.",pmbok:"Principes PMBOK 8"},
+  {id:"FC-034",lesson:3,domain:"Personnes",difficulty:2,term:"Culture responsabilisante (principe PMBOK 8)",def:"Donner aux membres de l'équipe l'autonomie, le soutien et la confiance nécessaires pour assumer pleinement leur travail.",pmbok:"Principes PMBOK 8"},
+  /* ===== LOT 2 : ECO 1.1 — VISION & DÉMARRAGE (Leçons 4) ===== */
+  {id:"FC-035",lesson:4,domain:"Personnes",difficulty:1,term:"Charte du projet",def:"Document qui autorise formellement l'existence du projet et confère au chef de projet le pouvoir d'affecter les ressources de l'organisation.",pmbok:"Charte du projet"},
+  {id:"FC-036",lesson:4,domain:"Personnes",difficulty:2,term:"Cas d'affaires",def:"Étude de faisabilité économique documentée qui établit les bénéfices attendus, justifie le projet et sert de base à l'autorisation d'activités supplémentaires.",pmbok:"Cas d'affaires"},
+  {id:"FC-037",lesson:4,domain:"Personnes",difficulty:2,term:"Document des besoins métier",def:"Document identifiant les livrables de haut niveau et décrivant ce qui doit être créé ou exécuté — condition préalable au cas d'affaires formel.",pmbok:"Document des besoins métier"},
+  {id:"FC-038",lesson:4,domain:"Personnes",difficulty:2,term:"Énoncé de vision du projet",def:"Document porté par un commanditaire ou un cadre qui exprime les objectifs souhaités et l'alignement stratégique ; référence tout au long du projet.",pmbok:"Énoncé de vision"},
+  {id:"FC-039",lesson:4,domain:"Personnes",difficulty:2,term:"Plan de réalisation des bénéfices",def:"Document décrivant comment et quand les bénéfices attendus du projet seront mesurés et obtenus, y compris au-delà de la clôture.",pmbok:"Plan de réalisation des bénéfices"},
+  {id:"FC-040",lesson:4,domain:"Personnes",difficulty:2,term:"Product box (exercice)",def:"Technique agile où les parties prenantes décrivent la solution comme sur l'emballage d'un produit (bénéfices, fonctionnalités, public cible) pour faire émerger une vision partagée.",pmbok:"Product box"},
+  {id:"FC-041",lesson:4,domain:"Personnes",difficulty:2,term:"Métaphore XP",def:"Technique issue de l'eXtreme Programming servant à décrire une vision commune du fonctionnement d'un système dans des termes compréhensibles par toutes les parties prenantes.",pmbok:"Métaphore XP"},
+  {id:"FC-042",lesson:4,domain:"Personnes",difficulty:2,term:"Méthode des 5 pourquoi",def:"Technique d'analyse qui interroge en chaîne les causes successives d'un problème pour identifier la cause profonde réelle à l'origine d'un malentendu ou d'une défaillance.",pmbok:"5 pourquoi"},
+  {id:"FC-043",lesson:4,domain:"Personnes",difficulty:2,term:"Diagramme d'Ishikawa (cause-effet)",def:"Outil qui catégorise visuellement les facteurs contributifs d'un problème sur des branches reliées à l'effet central — utilisé pour l'analyse de cause profonde.",pmbok:"Diagramme d'Ishikawa"},
+  {id:"FC-044",lesson:4,domain:"Personnes",difficulty:2,term:"Team charter (charte d'équipe)",def:"Document adaptatif qui établit les valeurs, accords de travail, normes et pratiques guidant le comportement collectif de l'équipe — analogue à la charte au niveau équipe.",pmbok:"Team charter"},
+  {id:"FC-045",lesson:4,domain:"Processus",difficulty:2,term:"Hypothèses du projet",def:"Conditions tenues pour vraies sans preuve formelle, documentées dans la charte car elles influencent les décisions et alimentent l'analyse des risques.",pmbok:"Hypothèses"},
+  {id:"FC-046",lesson:4,domain:"Processus",difficulty:1,term:"Contraintes du projet",def:"Limites imposées au projet (budget, calendrier, réglementation, ressources) documentées dans la charte pour encadrer les décisions de planification.",pmbok:"Contraintes"},
+  /* ===== LOT 3 : ECO 1.4 — PARTIES PRENANTES (Leçon 5) ===== */
+  {id:"FC-047",lesson:5,domain:"Personnes",difficulty:1,term:"Partie prenante",def:"Tout individu ou groupe pouvant affecter le projet, être affecté par lui, ou se percevoir comme tel — interne ou externe, équipe ou hors équipe.",pmbok:"Définition partie prenante"},
+  {id:"FC-048",lesson:5,domain:"Personnes",difficulty:2,term:"Registre des parties prenantes",def:"Document recensant pour chaque partie prenante : informations d'identification, d'évaluation (exigences, attentes, influence) et de classification (pouvoir/intérêt, direction d'influence).",pmbok:"Registre des parties prenantes"},
+  {id:"FC-049",lesson:5,domain:"Personnes",difficulty:2,term:"Analyse des parties prenantes",def:"Collecte et analyse systématiques d'informations quantitatives et qualitatives pour déterminer les intérêts à prendre en compte dans le projet.",pmbok:"Analyse des parties prenantes"},
+  {id:"FC-050",lesson:5,domain:"Personnes",difficulty:2,term:"Grille pouvoir/intérêt",def:"Matrice 2×2 pour catégoriser les parties prenantes selon leur pouvoir et leur intérêt : Gérer de près | Garder satisfait | Tenir informé | Surveiller.",pmbok:"Grille pouvoir/intérêt"},
+  {id:"FC-051",lesson:5,domain:"Personnes",difficulty:3,term:"Modèle de saillance",def:"Modèle qui classe les parties prenantes selon trois attributs : pouvoir (autorité), urgence (contrainte de temps et d'enjeu) et légitimité (validité de l'implication).",pmbok:"Modèle de saillance"},
+  {id:"FC-052",lesson:5,domain:"Personnes",difficulty:2,term:"Matrice d'évaluation de l'implication",def:"Outil comparant pour chaque partie prenante le niveau actuel (C) et le niveau souhaité (D) d'implication, de « non informé » à « leader » — pour cibler les actions.",pmbok:"Matrice d'évaluation de l'implication"},
+  {id:"FC-053",lesson:5,domain:"Personnes",difficulty:2,term:"Niveaux d'engagement des PP",def:"Échelle qualifiant l'attitude d'une partie prenante : Non informé → Résistant → Neutre → Soutien → Leader.",pmbok:"Niveaux d'engagement"},
+  {id:"FC-054",lesson:5,domain:"Personnes",difficulty:2,term:"Communication push",def:"Méthode de communication où l'information est envoyée aux destinataires : courriels, mémos, rapports d'état — sans garantie de lecture.",pmbok:"Communication push/pull/interactive"},
+  {id:"FC-055",lesson:5,domain:"Personnes",difficulty:2,term:"Communication pull",def:"Méthode de communication où l'information est mise à disposition (intranet, référentiel) et consultée à l'initiative du destinataire.",pmbok:"Communication push/pull/interactive"},
+  {id:"FC-056",lesson:5,domain:"Personnes",difficulty:2,term:"Communication interactive",def:"Méthode de communication bidirectionnelle en temps réel : conversations, réunions, ateliers, visioconférences — la plus efficace pour lever les ambiguïtés.",pmbok:"Communication push/pull/interactive"},
+  {id:"FC-057",lesson:5,domain:"Personnes",difficulty:2,term:"Plan de gestion de la communication",def:"Artefact précisant : exigences des parties prenantes, information à diffuser, fréquence, responsables, technologies utilisées, processus d'escalade et contraintes légales.",pmbok:"Plan de communication"},
+  {id:"FC-058",lesson:5,domain:"Personnes",difficulty:2,term:"Plan d'implication des parties prenantes",def:"Artefact définissant les stratégies et actions pour impliquer les parties prenantes tout au long du projet — distinct du plan de communication mais interdépendant.",pmbok:"Plan d'implication"},
+  {id:"FC-059",lesson:5,domain:"Personnes",difficulty:2,term:"Leadership serviteur — 3 étapes",def:"1. Définir la vision. 2. Aligner les personnes sur cette vision. 3. Motiver les personnes à poursuivre la vision ensemble.",pmbok:"Leadership serviteur"},
+  {id:"FC-060",lesson:5,domain:"Personnes",difficulty:3,term:"Enjeux des parties prenantes (5 types)",def:"Intérêt (effet d'une décision), Droits (juridiques ou moraux), Propriété (titre légal sur un actif), Connaissances (savoir spécialisé), Contribution (fonds ou ressources apportés).",pmbok:"Enjeux des parties prenantes"},
+  /* ===== LOT 4 : ECO 1.5 — ALIGNEMENT DES ATTENTES (Leçon 6) ===== */
+  {id:"FC-061",lesson:6,domain:"Personnes",difficulty:2,term:"Directions de l'influence",def:"Vers le haut (direction générale) · Vers le bas (équipe, spécialistes) · Vers l'extérieur (client, régulateur) · Latéral (pairs, autres services).",pmbok:"Directions de l'influence"},
+  {id:"FC-062",lesson:6,domain:"Personnes",difficulty:2,term:"KPI (Indicateur clé de performance)",def:"Métrique définie par la direction pour évaluer les progrès vers les objectifs stratégiques et contribuer à l'alignement organisationnel.",pmbok:"KPI"},
+  {id:"FC-063",lesson:6,domain:"Personnes",difficulty:2,term:"Définition de terminé (DoD)",def:"Ensemble de critères d'acceptation que chaque incrément doit respecter pour être considéré comme « terminé » — négociée avec les parties prenantes.",pmbok:"Définition de terminé (DoD)"},
+  {id:"FC-064",lesson:6,domain:"Personnes",difficulty:2,term:"Atelier facilité",def:"Réunion réunissant plusieurs parties prenantes pour collaborer sur un objectif commun — distingué de l'entretien individuel (tête-à-tête).",pmbok:"Atelier facilité"},
+  {id:"FC-065",lesson:6,domain:"Personnes",difficulty:2,term:"Mentorat dans le projet",def:"Relation organisée entre mentor et mentoré selon leurs objectifs et niveaux d'expérience, avec suivi continu — ECO 1.5.4.",pmbok:"Mentorat"},
+  /* ===== LOT 5 : ECO 3.1 — GOUVERNANCE (Leçon 7) ===== */
+  {id:"FC-066",lesson:7,domain:"Environnement",difficulty:2,term:"Gouvernance du projet",def:"Cadre, fonctions et processus qui guident les activités de management du projet vers ses objectifs tout au long du cycle de vie.",pmbok:"Gouvernance du projet"},
+  {id:"FC-067",lesson:7,domain:"Environnement",difficulty:2,term:"EEF (Facteurs environnementaux)",def:"Conditions internes ou externes échappant au contrôle immédiat de l'équipe qui influencent le projet : réglementation, culture, marché, infrastructure IT…",pmbok:"EEF vs OPA"},
+  {id:"FC-068",lesson:7,domain:"Environnement",difficulty:2,term:"OPA (Actifs organisationnels)",def:"Actifs internes réutilisables d'un projet à l'autre : politiques, procédures, modèles, informations historiques, bases de connaissances.",pmbok:"EEF vs OPA"},
+  {id:"FC-069",lesson:7,domain:"Environnement",difficulty:2,term:"Deux dimensions de la réussite du projet",def:"1. Réussite des résultats : valeur créée (ROI, ventes, ESG). 2. Réussite des processus de management : respect des contraintes (budget, périmètre, délai, qualité).",pmbok:"Deux dimensions de la réussite"},
+  {id:"FC-070",lesson:7,domain:"Environnement",difficulty:2,term:"Comité de pilotage (comité de gouvernance)",def:"Instance de supervision du projet composée de commanditaires, cadres dirigeants et ressources PMO — examine les livrables clés et oriente les décisions stratégiques.",pmbok:"Comité de pilotage"},
+  {id:"FC-071",lesson:7,domain:"Environnement",difficulty:3,term:"Seuil d'escalade",def:"Valeur limite qui, une fois atteinte ou franchie, déclenche obligatoirement une action ou une remontée vers l'instance supérieure définie par la gouvernance.",pmbok:"Seuil vs tolérance"},
+  {id:"FC-072",lesson:7,domain:"Environnement",difficulty:3,term:"Tolérance",def:"Variation acceptable autour d'une cible (ex. ±5 % du budget) à l'intérieur de laquelle le chef de projet peut agir sans escalade.",pmbok:"Seuil vs tolérance"},
+  {id:"FC-073",lesson:7,domain:"Environnement",difficulty:2,term:"Revue de passage de phase (phase gate)",def:"Point de décision go/no-go entre deux phases : évaluer performance et justification avant d'autoriser, réorienter ou arrêter le projet (kill point).",pmbok:"Revue de passage de phase"},
+  {id:"FC-074",lesson:7,domain:"Environnement",difficulty:2,term:"Matrice RACI",def:"Matrice d'affectation des responsabilités : Responsible (Réalise), Accountable (redevable — unique par activité), Consulted (Consulté), Informed (Informé).",pmbok:"Matrice RACI"},
+  {id:"FC-075",lesson:7,domain:"Environnement",difficulty:2,term:"CCB (Comité de maîtrise des changements)",def:"Instance formelle qui examine les demandes de changement et statue : approbation, rejet ou ajournement — selon le cadre de gouvernance.",pmbok:"CCB"},
+  {id:"FC-076",lesson:7,domain:"Environnement",difficulty:3,term:"Gestion de configuration",def:"Processus maîtrisant les versions et l'intégrité des livrables et documents : identification des éléments, suivi des modifications et vérification de cohérence.",pmbok:"Gestion de configuration"},
+  {id:"FC-077",lesson:7,domain:"Environnement",difficulty:2,term:"Gouvernance adaptative",def:"Mode de gouvernance précisant les extrants par itération et donnant une visibilité via un suivi en temps réel (réunions quotidiennes de coordination) — spécifique aux projets agiles.",pmbok:"Gouvernance adaptative"},
+  /* ===== LOT 6 : CONFLITS & INTÉGRATION (Leçon 8) ===== */
+  {id:"FC-078",lesson:8,domain:"Personnes",difficulty:2,term:"Confrontation / résolution de problème",def:"Technique de gestion de conflit la plus durable : traiter le désaccord en cherchant une solution gagnant-gagnant acceptable par toutes les parties.",pmbok:"Techniques de gestion de conflit"},
+  {id:"FC-079",lesson:8,domain:"Personnes",difficulty:2,term:"Compromis / conciliation",def:"Technique de gestion de conflit cherchant une issue qui satisfait partiellement chaque partie — ni gagnant ni perdant total.",pmbok:"Techniques de gestion de conflit"},
+  {id:"FC-080",lesson:8,domain:"Personnes",difficulty:2,term:"Lissage / accommodation",def:"Technique de gestion de conflit insistant sur les points d'accord et minimisant les divergences — masque le fond sans le résoudre.",pmbok:"Techniques de gestion de conflit"},
+  {id:"FC-081",lesson:8,domain:"Personnes",difficulty:2,term:"Retrait / esquive",def:"Technique de gestion de conflit qui reporte le sujet ou se retire de la situation conflictuelle — à utiliser provisoirement, non comme solution.",pmbok:"Techniques de gestion de conflit"},
+  {id:"FC-082",lesson:8,domain:"Personnes",difficulty:2,term:"Imposition / force",def:"Technique de gestion de conflit qui fait prévaloir son point de vue au détriment des autres — rapide mais peu durable (laisse un perdant).",pmbok:"Techniques de gestion de conflit"},
+  {id:"FC-083",lesson:8,domain:"Personnes",difficulty:2,term:"Échelle de Tuckman — 5 stades",def:"Formation → Tension (storming) → Cohésion (norming) → Performance → Dissolution. Les frictions sur les rôles et méthodes caractérisent le storming.",pmbok:"Tuckman"},
+  {id:"FC-084",lesson:8,domain:"Personnes",difficulty:2,term:"Règles de base (ground rules)",def:"Attentes comportementales définies collectivement par l'équipe qui préviennent les conflits et fournissent un cadre pour les traiter quand ils surviennent.",pmbok:"Ground rules"}
+];
+
+/* ---- FC STATE ---- */
+var fcN = 20;
+var fcMode = 'term-def'; /* 'term-def' or 'def-term' */
+var fcSelLessons = [];
+var fcSelDom = ['Personnes','Processus','Environnement'];
+var fcSelDiff = [1,2,3];
+var fcPool = [];
+var fcIdx = 0;
+var fcFlipped = false;
+var fcOk = 0;
+var fcKo = 0;
+var fcMissed = [];
+var fcSessionOk = 0;
+var fcSessionTotal = 0;
+
+/* ---- FC HELPERS ---- */
+function fcAvailCount() {
+  return FLASHCARD_BANK.filter(function(c){
+    return has(fcSelLessons,c.lesson) && has(fcSelDom,c.domain) && has(fcSelDiff,c.difficulty);
+  }).length;
+}
+function updateFcAvail() {
+  var n = fcAvailCount();
+  el('fcAvailTxt').textContent = n + ' disponible' + (n>1?'s':'');
+  if (fcN > n) { fcN = Math.max(10, n); el('fcNVal').textContent = fcN; }
+  el('fcStartBtn').disabled = (n === 0);
+  el('fcSetupNote').textContent = n === 0 ? 'Aucune carte disponible avec ces filtres.' : '';
+}
+
+/* ---- FC SETUP RENDER ---- */
+function renderFcSetup() {
+  var ll = el('fcLessonList'); if (!ll) return;
+  ll.innerHTML = '';
+  for (var i=0;i<LESSONS.length;i++) {
+    var L=LESSONS[i];
+    var cnt = FLASHCARD_BANK.filter(function(c){return c.lesson===L.id;}).length;
+    if (!cnt) continue;
+    var on = has(fcSelLessons, L.id);
+    ll.innerHTML += '<button class="lesson-btn'+(on?' on':'')+('" onclick="toggleFcLesson('+L.id+')">')+
+      '<div class="tick">'+(on?'✓':'')+'</div>'+
+      '<div><div class="l-name">'+L.title+'</div>'+
+      '<div class="l-desc">'+L.desc+'</div>'+
+      '<span class="badge">'+cnt+' carte'+(cnt>1?'s':'')+'</span></div></button>';
+  }
+  renderFcChips('fcDomChips',['Personnes','Processus','Environnement'],fcSelDom,'fcDom');
+  renderFcChips('fcDiffChips',['1','2','3'],fcSelDiff.map(String),'fcDiff',function(v){return ['★','★★','★★★'][parseInt(v)-1];});
+  updateFcAvail();
+}
+function renderFcChips(containerId, options, sel, type, labelFn) {
+  var c=el(containerId); if(!c)return;
+  c.innerHTML='';
+  var domClass={'Personnes':'P','Processus':'Pr','Environnement':'E'};
+  for(var i=0;i<options.length;i++){
+    var v=options[i];
+    var on=has(sel,isNaN(v)?v:parseInt(v));
+    var cls='chip'+(on?' on':'')+(domClass[v]?' '+domClass[v]:'');
+    var label=labelFn?labelFn(v):v;
+    c.innerHTML+='<button class="'+cls+'" onclick="toggleFcChip(\''+type+'\',\''+v+'\')">'+label+'</button>';
+  }
+}
+function toggleFcLesson(id) {
+  if(has(fcSelLessons,id)) fcSelLessons=without(fcSelLessons,id); else fcSelLessons.push(id);
+  renderFcSetup();
+}
+function toggleFcChip(type, val) {
+  if(type==='fcDom'){
+    if(has(fcSelDom,val)) fcSelDom=without(fcSelDom,val); else fcSelDom.push(val);
+  } else {
+    var n=parseInt(val);
+    if(has(fcSelDiff,n)) fcSelDiff=without(fcSelDiff,n); else fcSelDiff.push(n);
+  }
+  renderFcSetup();
+}
+function changeFcN(d) {
+  var max = fcAvailCount();
+  fcN = Math.min(max, Math.max(10, fcN+d));
+  el('fcNVal').textContent = fcN;
+}
+function setFcMode(m) {
+  fcMode = m;
+  el('fcModeTermDef').className = 'fc-mode-btn'+(m==='term-def'?' on':'');
+  el('fcModeDefTerm').className = 'fc-mode-btn'+(m==='def-term'?' on':'');
+}
+
+/* ---- FC SESSION ---- */
+function startFlashcards() {
+  var pool = FLASHCARD_BANK.filter(function(c){
+    return has(fcSelLessons,c.lesson) && has(fcSelDom,c.domain) && has(fcSelDiff,c.difficulty);
+  });
+  if (!pool.length) return;
+  fcPool = shuffle(pool).slice(0, fcN);
+  fcIdx = 0; fcOk = 0; fcKo = 0; fcMissed = []; fcFlipped = false;
+  showView('fc-session');
+  renderFcResults(false);
+  renderFcCard();
+}
+function startFcMissed() {
+  if (!fcMissed.length) return;
+  fcPool = shuffle(fcMissed);
+  fcIdx = 0; fcOk = 0; fcKo = 0; fcMissed = []; fcFlipped = false;
+  showView('fc-session');
+  renderFcResults(false);
+  renderFcCard();
+}
+function renderFcCard() {
+  var c = fcPool[fcIdx];
+  if (!c) return;
+  var total = fcPool.length;
+  el('fcProgBar').style.width = (fcIdx/total*100)+'%';
+  el('fcCounterTxt').textContent = (fcIdx+1)+' / '+total;
+  el('fcOkCount').textContent = fcOk;
+  el('fcKoCount').textContent = fcKo;
+  // reset flip
+  fcFlipped = false;
+  var inner = el('fcInner');
+  inner.className = 'fc-inner';
+  el('fcActions').style.display = 'none';
+  el('fcFlipHint').style.opacity = '0';
+  // fill faces
+  var domCol = domColor(c.domain);
+  if (fcMode === 'term-def') {
+    el('fcFrontTag').textContent = 'Notion · ' + c.domain;
+    el('fcFrontTag').style.color = domCol;
+    el('fcFrontTerm').textContent = c.term;
+    el('fcFrontSub').textContent = c.pmbok || '';
+    el('fcBackTag').textContent = 'Définition';
+    el('fcBackDef').textContent = c.def;
+    el('fcBackRef').textContent = '📖 ' + c.pmbok;
+  } else {
+    el('fcFrontTag').textContent = 'Définition · ' + c.domain;
+    el('fcFrontTag').style.color = domCol;
+    el('fcFrontTerm').textContent = c.def;
+    el('fcFrontSub').textContent = '';
+    el('fcBackTag').textContent = 'Notion';
+    el('fcBackDef').textContent = c.term;
+    el('fcBackRef').textContent = '📖 ' + c.pmbok;
+  }
+}
+function flipCard() {
+  if (fcIdx >= fcPool.length) return;
+  fcFlipped = !fcFlipped;
+  el('fcInner').className = 'fc-inner' + (fcFlipped?' flipped':'');
+  if (fcFlipped) {
+    el('fcActions').style.display = 'flex';
+    el('fcFlipHint').style.opacity = '1';
+  } else {
+    el('fcActions').style.display = 'none';
+    el('fcFlipHint').style.opacity = '0';
+  }
+}
+function fcJudge(ok) {
+  var c = fcPool[fcIdx];
+  if (ok) { fcOk++; } else { fcKo++; fcMissed.push(c); }
+  fcIdx++;
+  if (fcIdx >= fcPool.length) {
+    fcSessionOk += fcOk;
+    fcSessionTotal += fcPool.length;
+    renderFcResults(true);
+    el('fcProgBar').style.width = '100%';
+  } else {
+    renderFcCard();
+  }
+}
+function renderFcResults(show) {
+  var resultsEl = el('view-fc-session');
+  if (!resultsEl) return;
+  var hero = resultsEl.querySelector('.fc-results-hero');
+  var cardEl = resultsEl.querySelector('.card');
+  var btnRow = resultsEl.querySelector('.btn-row');
+  var scene = el('fcScene');
+  var fcFlipHint = el('fcFlipHint');
+  var fcActions = el('fcActions');
+  var quitBtn = resultsEl.querySelector('div[style*="text-align:center"]');
+  if (show) {
+    // show results
+    if (scene) scene.style.display = 'none';
+    if (fcFlipHint) fcFlipHint.style.display = 'none';
+    if (fcActions) fcActions.style.display = 'none';
+    if (quitBtn) quitBtn.style.display = 'none';
+    if (hero) hero.style.display = 'block';
+    if (cardEl) cardEl.style.display = 'block';
+    if (btnRow) btnRow.style.display = 'flex';
+    var total = fcPool.length;
+    var pct = total ? Math.round(fcOk/total*100) : 0;
+    el('fcScoreBig').textContent = pct+'%';
+    el('fcScoreBig').style.color = pct>=70?'var(--ok)':'var(--bad)';
+    el('fcScoreFrac').textContent = fcOk+' connu · '+fcKo+' à revoir sur '+total+' cartes';
+    var msg = pct>=80?'Excellent ! 🎯':pct>=60?'Bien — continuez à réviser 💪':'Encore un effort — revenez sur les ✗ 📚';
+    el('fcScoreMsg').textContent = msg;
+    // review list
+    var rl = el('fcReviewList');
+    rl.innerHTML = '';
+    if (!fcMissed.length) {
+      rl.innerHTML = '<div style="color:var(--ok);font-size:14px;padding:10px 0">Toutes les cartes maîtrisées ✓</div>';
+    } else {
+      for (var i=0;i<fcMissed.length;i++) {
+        var mc = fcMissed[i];
+        rl.innerHTML += '<div class="rev-item">'+
+          '<div class="rev-q">'+mc.term+'</div>'+
+          '<div style="font-size:13px;color:var(--soft);line-height:1.5">'+mc.def+'</div>'+
+          '<div style="font-size:11px;color:var(--dim);margin-top:6px">📖 '+mc.pmbok+'</div></div>';
+      }
+    }
+    if (typeof renderStats === 'function') renderStats();
+  } else {
+    // show session
+    if (scene) scene.style.display = '';
+    if (fcFlipHint) { fcFlipHint.style.display = ''; fcFlipHint.style.opacity = '0'; }
+    if (fcActions) { fcActions.style.display = 'none'; }
+    if (quitBtn) quitBtn.style.display = '';
+    if (hero) hero.style.display = 'none';
+    if (cardEl) cardEl.style.display = 'none';
+    if (btnRow) btnRow.style.display = 'none';
+  }
+}
+function quitFlashcards() {
+  showView('flashcards');
+}
+
 /* ---- STATS ---- */
 function renderStats() {
   var g=el('statGrid'); if(!g)return;
   g.innerHTML='<div class="stat-box"><div class="stat-n">'+BANK.length+'</div><div class="stat-l">Questions total</div></div>'+
-    '<div class="stat-box"><div class="stat-n">'+BANK.filter(function(q){return q.lesson===1;}).length+'</div><div class="stat-l">Questions L1</div></div>'+
-    '<div class="stat-box"><div class="stat-n">'+BANK.filter(function(q){return q.lesson===2;}).length+'</div><div class="stat-l">Questions L2</div></div>'+
-    '<div class="stat-box"><div class="stat-n">'+missed.length+'</div><div class="stat-l">Mes erreurs</div></div>';
+    '<div class="stat-box"><div class="stat-n">'+FLASHCARD_BANK.length+'</div><div class="stat-l">Cartes total</div></div>'+
+    '<div class="stat-box"><div class="stat-n">'+missed.length+'</div><div class="stat-l">Erreurs quiz</div></div>'+
+    '<div class="stat-box"><div class="stat-n">'+fcMissed.length+'</div><div class="stat-l">Cartes à revoir</div></div>'+
+    (fcSessionTotal?'<div class="stat-box"><div class="stat-n" style="color:'+(fcSessionOk/fcSessionTotal>=0.7?'var(--ok)':'var(--bad)')+'">'+Math.round(fcSessionOk/fcSessionTotal*100)+'%</div><div class="stat-l">Moy. cartes session</div></div>':'');
   var hl=el('histList'); if(!hl)return;
   if(!sessionHistory.length){hl.innerHTML='<div style="text-align:center;color:var(--dim);padding:24px;font-size:14px">Aucune session encore.</div>';return;}
   hl.innerHTML='';
@@ -722,7 +1177,9 @@ function resetStats() {
 
 /* ---- INIT ---- */
 LESSONS.forEach(function(L){ selLessons.push(L.id); });
+LESSONS.forEach(function(L){ if(FLASHCARD_BANK.some(function(c){return c.lesson===L.id;})) fcSelLessons.push(L.id); });
 renderSetup();
+renderFcSetup();
 </script>
 </body>
 </html>
