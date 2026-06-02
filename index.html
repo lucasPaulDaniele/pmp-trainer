@@ -203,7 +203,7 @@ footer{text-align:center;color:var(--dim);font-size:11px;margin-top:28px;line-he
 <div id="view-setup" class="view active">
   <div class="hero">
     <h1>Préparez votre <em>PMP®</em></h1>
-    <p>120 questions · Leçons 1 & 2 · Corrections complètes ECO & PMBOK 8</p>
+    <p>135 questions · 7 groupes ECO · Corrections complètes ECO & PMBOK 8</p>
     <div class="pills">
       <span class="pill" style="color:#00A99D;border-color:rgba(0,169,157,.4);background:rgba(0,169,157,.15)">Personnes 33%</span>
       <span class="pill" style="color:#F4B942;border-color:rgba(244,185,66,.4);background:rgba(244,185,66,.15)">Processus 41%</span>
@@ -211,7 +211,7 @@ footer{text-align:center;color:var(--dim);font-size:11px;margin-top:28px;line-he
     </div>
   </div>
   <div class="card">
-    <div class="sec">1 · Leçons</div>
+    <div class="sec">1 · Groupes ECO</div>
     <div class="lessons" id="lessonList"></div>
   </div>
   <div class="card">
@@ -399,7 +399,7 @@ function renderSetup() {
     var b = document.createElement('button');
     b.className = 'lesson-btn' + (on?' on':'');
     b.setAttribute('data-lid', L.id);
-    b.innerHTML = '<span class="tick">'+(on?'✓':'')+'</span><span><div class="l-name">Leçon '+L.id+' — '+L.title+'</div><div class="l-desc">'+L.desc+'</div><span class="badge">'+cnt+' questions</span></span>';
+    b.innerHTML = '<span class="tick">'+(on?'✓':'')+'</span><span><div class="l-name">'+L.title+'</div><div class="l-desc">'+L.desc+'</div><span class="badge">'+cnt+' questions</span></span>';
     b.onclick = (function(lid){ return function() { toggleLesson(lid); }; })(L.id);
     ll.appendChild(b);
   }
