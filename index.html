@@ -1897,6 +1897,9 @@ function learnSubmitMCQ() {
     else if (isSel) opts[i].className = 'learn-opt wrong';
     opts[i].disabled = true;
   }
+  /* Hide the submit button to prevent double-validation */
+  var sub = el('learnMCQSubmit');
+  if (sub) sub.style.display = 'none';
   learnApplyResult(learnCurrentItem.card, correct);
   learnShowFeedback(learnCurrentItem.card, correct, false);
 }
