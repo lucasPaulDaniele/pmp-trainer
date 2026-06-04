@@ -223,6 +223,35 @@ nav button.on{background:var(--or-dim);color:var(--or);border-color:rgba(241,90,
 .learn-def-box{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--brd);border-radius:16px;padding:26px 22px;margin:14px 0;min-height:160px;display:flex;flex-direction:column;gap:10px}
 .learn-def-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 .learn-def-text{font-size:16px;font-weight:600;line-height:1.6;color:var(--tx)}
+.learn-blank{display:inline-block;color:transparent;border-radius:5px;padding:0 4px;background:var(--or-dim,rgba(241,90,41,.16));border:1px dashed var(--or-glow,rgba(241,90,41,.45));font-weight:700;letter-spacing:.05em;line-height:1.3;vertical-align:baseline;transition:background .25s ease,border-color .25s ease,color .25s ease}
+.learn-blank.filled{color:var(--or,#F15A29);background:var(--ok-bg,rgba(39,174,96,.12));border:1px solid var(--ok,#27AE60);border-style:solid;animation:learnFill .42s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes learnFill{0%{transform:scale(.7);opacity:0}55%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+
+/* Overlay réussite / défaite */
+.learn-result-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
+.learn-result-badge{width:128px;height:128px;border-radius:50%;display:grid;place-items:center;font-size:68px;font-weight:800;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:learnBadgePop .6s cubic-bezier(.18,.9,.28,1.3) forwards}
+.learn-result-badge.ok{background:radial-gradient(circle at 35% 30%,#34d27b,#1e9e58)}
+.learn-result-badge.bad{background:radial-gradient(circle at 35% 30%,#ff6b5e,#d63a2e)}
+@keyframes learnBadgePop{0%{transform:scale(.2) rotate(-12deg);opacity:0}45%{transform:scale(1.18) rotate(4deg);opacity:1}70%{transform:scale(.94)}100%{transform:scale(1) rotate(0);opacity:1}}
+.learn-result-overlay.fade .learn-result-badge{animation:learnBadgeOut .35s ease forwards}
+@keyframes learnBadgeOut{to{transform:scale(.6);opacity:0}}
+/* halo */
+.learn-result-ring{position:absolute;width:128px;height:128px;border-radius:50%;border:4px solid;animation:learnRing .8s ease-out forwards}
+.learn-result-ring.ok{border-color:#34d27b}
+.learn-result-ring.bad{border-color:#ff6b5e}
+@keyframes learnRing{0%{transform:scale(.6);opacity:.8}100%{transform:scale(2.6);opacity:0}}
+/* flash plein écran pour la défaite */
+.learn-result-flash{position:absolute;inset:0;background:rgba(214,58,46,.22);animation:learnFlash .5s ease-out forwards}
+@keyframes learnFlash{0%{opacity:1}100%{opacity:0}}
+/* secousse pour la défaite */
+@keyframes learnShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-10px)}30%{transform:translateX(9px)}45%{transform:translateX(-7px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.learn-shake{animation:learnShake .5s cubic-bezier(.36,.07,.19,.97)}
+/* confettis (réussite) */
+.learn-confetti{position:absolute;top:48%;left:50%;width:10px;height:14px;border-radius:2px;opacity:.95;animation:learnConfetti .9s ease-out forwards}
+@keyframes learnConfetti{0%{transform:translate(-50%,-50%) rotate(0);opacity:1}100%{transform:translate(var(--cx),var(--cy)) rotate(var(--cr));opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .learn-result-badge,.learn-result-ring,.learn-result-flash,.learn-confetti,.learn-shake{animation-duration:.01ms!important}
+}
 .learn-domain-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid;margin-top:4px}
 .learn-format-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);color:var(--soft);background:rgba(255,255,255,.06)}
 
@@ -1811,6 +1840,202 @@ function learnNext() {
   learnUpdateHeader();
 }
 
+/* Masque le terme (et ses mots significatifs) dans la définition affichée,
+   pour ne pas donner la réponse en mode apprentissage.
+   Retourne { html, count } : html contient des <span class="learn-blank"
+   data-fill="…">____</span> que l'on remplit en animation à la validation. */
+function learnStripAccents(s){
+  return s.normalize ? s.normalize('NFD').replace(/[\u0300-\u036f]/g,'') : s;
+}
+/* Développés de sigles à masquer même quand ils ne figurent pas dans le terme.
+   Clé = sigle ; valeurs = expressions à cacher dans la définition. */
+var LEARN_ACRONYM_EXPANSIONS = {
+  'PV':['Valeur planifiée','valeur planifiée'],
+  'EV':['Valeur acquise','valeur acquise'],
+  'AC':['Coût réel','coût réel'],
+  'BAC':['Budget à l\'achèvement','budget à l\'achèvement'],
+  'EAC':['Coût final estimé','coût final estimé','estimation à l\'achèvement'],
+  'ETC':['Coût restant estimé','coût restant estimé','estimation pour achèvement'],
+  'VAC':['Écart à l\'achèvement','écart à l\'achèvement'],
+  'SPI':['Indice de performance des délais','indice de performance des délais'],
+  'CPI':['Indice de performance des coûts','indice de performance des coûts'],
+  'SV':['Écart d\'échéancier','écart d\'échéancier','écart de délai'],
+  'CV':['Écart de coût','écart de coût'],
+  'ROI':['Retour sur investissement','retour sur investissement'],
+  'VAN':['Valeur actuelle nette','valeur actuelle nette'],
+  'TRI':['Taux de rendement interne','taux de rendement interne'],
+  'WBS':['Organigramme des travaux','structure de découpage du projet','structure de découpage'],
+  'RBS':['Organigramme des ressources','organigramme des ressources'],
+  'DoD':['Définition de terminé','définition de terminé','definition of done'],
+  'MVP':['Produit minimum viable','produit minimum viable'],
+  'KPI':['Indicateur clé de performance','indicateur clé de performance'],
+  'PMO':['Bureau des projets','bureau des projets'],
+  'OPA':['Actifs organisationnels','actifs organisationnels'],
+  'EEF':['Facteurs environnementaux','facteurs environnementaux'],
+  'SOW':['Énoncé des travaux','énoncé des travaux'],
+  'RACI':['matrice d\'affectation des responsabilités']
+};
+
+function learnMaskTermInDef(term, def) {
+  var STOP = {'de':1,'des':1,'du':1,'la':1,'le':1,'les':1,'un':1,'une':1,'et':1,'ou':1,
+    'a':1,'au':1,'aux':1,'en':1,'dans':1,'pour':1,'par':1,'sur':1,'sa':1,'son':1,'ses':1,
+    'qui':1,'que':1,'plan':1,'projet':1,'gestion':1,'management':1};
+
+  /* 1. on travaille sur une version échappée HTML, en y insérant des jetons \x00…\x00
+     pour repérer les blancs sans risque de collision. */
+  var SENT = '\u0000';
+  var fills = [];
+  function addBlank(matchedText){
+    fills.push(matchedText);
+    return SENT + (fills.length-1) + SENT;
+  }
+
+  /* mots significatifs du terme (hors parenthèses, hors mots-outils) */
+  var base = term.replace(/\([^)]*\)/g,' ');
+  var insideParen = (term.match(/\(([^)]*)\)/g)||[]).map(function(p){return p.replace(/[()]/g,'');});
+  var rawWords = (base+' '+insideParen.join(' ')).split(/[\s,/'’\-—·]+/);
+  var words = [];
+  var acronyms = [];
+  for (var i=0;i<rawWords.length;i++){
+    var w = rawWords[i].trim();
+    if (!w) continue;
+    var key = learnStripAccents(w.toLowerCase());
+    if (STOP[key]) continue;
+    var isAcr = /^[A-ZÀ-Þ]{2,}$/.test(w) || /^[A-Z][a-z]?[A-Z]/.test(w);
+    if (w.length < 4 && !isAcr) continue;
+    if (isAcr) acronyms.push(w); else words.push(w);
+  }
+
+  /* expressions complètes à masquer = expansions des sigles trouvés */
+  var phrases = [];
+  for (var a=0;a<acronyms.length;a++){
+    var exp = LEARN_ACRONYM_EXPANSIONS[acronyms[a]] || LEARN_ACRONYM_EXPANSIONS[acronyms[a].toUpperCase()];
+    if (exp) for (var e=0;e<exp.length;e++) phrases.push(exp[e]);
+  }
+
+  var masked = def;
+
+  /* a) phrases (expansions) d'abord, les plus longues en premier */
+  phrases.sort(function(x,y){return y.length-x.length;});
+  for (var p=0;p<phrases.length;p++){
+    var escP = phrases[p].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    try {
+      var reP = new RegExp(escP+'(?![A-Za-zÀ-ÿ])', 'gi');
+      masked = masked.replace(reP, function(m){ return addBlank(m); });
+    } catch(e2){}
+  }
+
+  /* b) sigles : casse respectée, frontières strictes */
+  for (var c=0;c<acronyms.length;c++){
+    var escA = acronyms[c].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    try {
+      var reA = new RegExp('(^|[^A-Za-zÀ-ÿ\\u0000])('+escA+')s?(?![A-Za-zÀ-ÿ])', 'g');
+      masked = masked.replace(reA, function(full, pre, sig){ return pre + addBlank(sig); });
+    } catch(e3){}
+  }
+
+  /* c) mots ordinaires (radical), les plus longs d'abord */
+  words.sort(function(x,y){return y.length-x.length;});
+  for (var j=0;j<words.length;j++){
+    var esc = words[j].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    var stem = esc.replace(/(ications?|ifications?|ations?|ation|ateurs?|atrice|er|ée?s?|ions?|ives?|ifs?|elles?|aux|ales?|al|ité|ifier|ifiée?s?)$/i,'');
+    if (stem.length < 4) stem = esc.replace(/(e?s|er|ée?s?)$/i,'');
+    if (stem.length < 4) stem = esc;
+    try {
+      var re = new RegExp('[A-Za-zÀ-ÿ]*'+stem+'[A-Za-zÀ-ÿ]*', 'gi');
+      masked = masked.replace(re, function(m){ return addBlank(m); });
+    } catch(e4){}
+  }
+
+  /* fusionne les jetons consécutifs (séparés par espaces/apostrophes) en un seul blanc,
+     en concaténant leur contenu réel */
+  masked = masked.replace(new RegExp(SENT+'(\\d+)'+SENT+'([\\s’\'\\-]*)'+SENT+'(\\d+)'+SENT,'g'),
+    function(_, a1, sep, a2){
+      var merged = fills[+a1] + sep + fills[+a2];
+      fills.push(merged);
+      return SENT + (fills.length-1) + SENT;
+    });
+  /* (deux passes pour les triples) */
+  masked = masked.replace(new RegExp(SENT+'(\\d+)'+SENT+'([\\s’\'\\-]*)'+SENT+'(\\d+)'+SENT,'g'),
+    function(_, a1, sep, a2){
+      var merged = fills[+a1] + sep + fills[+a2];
+      fills.push(merged);
+      return SENT + (fills.length-1) + SENT;
+    });
+
+  /* on échappe le HTML, puis on remplace les jetons par les spans-blancs */
+  var safe = escHtml(masked);
+  var count = 0;
+  safe = safe.replace(new RegExp(SENT+'(\\d+)'+SENT,'g'), function(_, idx){
+    count++;
+    var fill = escHtml(fills[+idx]);
+    return '<span class="learn-blank" data-fill="'+fill+'">____</span>';
+  });
+  return { html: safe, count: count };
+}
+
+/* Anime le remplissage des blancs avec leurs vraies valeurs */
+function learnRevealBlanks(scope) {
+  var root = scope || el('learnItemArea');
+  if (!root) return;
+  var blanks = root.querySelectorAll('.learn-blank:not(.filled)');
+  for (var i=0;i<blanks.length;i++){
+    (function(b, delay){
+      setTimeout(function(){
+        b.textContent = b.getAttribute('data-fill') || '';
+        b.className = 'learn-blank filled';
+      }, delay);
+    })(blanks[i], 90 + i*160);
+  }
+}
+
+/* Animation de réussite / défaite (overlay plein écran auto-destructeur) */
+function learnPlayResultAnim(correct) {
+  if (typeof document === 'undefined') return;
+  var ov = document.createElement('div');
+  ov.className = 'learn-result-overlay';
+
+  if (!correct) {
+    var flash = document.createElement('div');
+    flash.className = 'learn-result-flash';
+    ov.appendChild(flash);
+    /* secousse de la zone de question */
+    var area = el('learnItemArea');
+    if (area) { area.classList.remove('learn-shake'); void area.offsetWidth; area.classList.add('learn-shake');
+      setTimeout(function(){ area.classList.remove('learn-shake'); }, 600); }
+  } else {
+    /* confettis */
+    var colors = ['#34d27b','#F15A29','#FFC93C','#4DA3FF','#B47DFF','#FF6FB5'];
+    for (var i=0;i<22;i++){
+      var c = document.createElement('div');
+      c.className = 'learn-confetti';
+      var ang = Math.random()*Math.PI*2;
+      var dist = 120 + Math.random()*180;
+      c.style.setProperty('--cx', (Math.cos(ang)*dist).toFixed(0)+'px');
+      c.style.setProperty('--cy', (Math.sin(ang)*dist - 40).toFixed(0)+'px');
+      c.style.setProperty('--cr', (Math.random()*720-360).toFixed(0)+'deg');
+      c.style.background = colors[i % colors.length];
+      c.style.animationDelay = (Math.random()*0.08).toFixed(2)+'s';
+      ov.appendChild(c);
+    }
+  }
+
+  var ring = document.createElement('div');
+  ring.className = 'learn-result-ring ' + (correct?'ok':'bad');
+  ov.appendChild(ring);
+
+  var badge = document.createElement('div');
+  badge.className = 'learn-result-badge ' + (correct?'ok':'bad');
+  badge.textContent = correct ? '✓' : '✗';
+  ov.appendChild(badge);
+
+  document.body.appendChild(ov);
+
+  /* disparition */
+  setTimeout(function(){ ov.classList.add('fade'); }, correct ? 850 : 700);
+  setTimeout(function(){ if (ov.parentNode) ov.parentNode.removeChild(ov); }, correct ? 1250 : 1050);
+}
+
 /* Render item (question) */
 function learnRenderItem(card, fmt) {
   var area = el('learnItemArea');
@@ -1826,7 +2051,7 @@ function learnRenderItem(card, fmt) {
     + '<span class="learn-format-badge" style="margin-left:auto">'+lvlNames[stBox]+'</span>'
     + '</div>'
     + '<div class="learn-def-label">Définition</div>'
-    + '<div class="learn-def-text">'+escHtml(card.def)+'</div>'
+    + '<div class="learn-def-text">'+learnMaskTermInDef(card.term, card.def).html+'</div>'
     + '</div>';
 
   if (fmt === 'recall') {
@@ -1900,6 +2125,8 @@ function learnSubmitMCQ() {
   /* Hide the submit button to prevent double-validation */
   var sub = el('learnMCQSubmit');
   if (sub) sub.style.display = 'none';
+  learnRevealBlanks();
+  learnPlayResultAnim(correct);
   learnApplyResult(learnCurrentItem.card, correct);
   learnShowFeedback(learnCurrentItem.card, correct, false);
 }
@@ -1914,6 +2141,8 @@ function learnSubmitRecall() {
   inp.disabled = true;
   var sub = el('learnRecallSubmit');
   if (sub) sub.style.display = 'none';
+  learnRevealBlanks();
+  learnPlayResultAnim(correct);
   learnApplyResult(learnCurrentItem.card, correct);
   learnShowFeedback(learnCurrentItem.card, correct, true);
 }
@@ -1923,6 +2152,8 @@ function learnDontKnow() {
   if (inp) { inp.className = 'learn-input wrong'; inp.disabled = true; }
   var sub = el('learnRecallSubmit');
   if (sub) sub.style.display = 'none';
+  learnRevealBlanks();
+  learnPlayResultAnim(false);
   learnApplyResult(learnCurrentItem.card, false);
   learnShowFeedback(learnCurrentItem.card, false, true);
 }
@@ -1949,8 +2180,9 @@ function learnShowFeedback(card, correct, isRecall) {
     + '</div>'
     + '<div class="btn-row"><button class="btn" onclick="learnContinue()">Continuer →</button></div>';
 
-  /* Append feedback below the question area */
-  area.innerHTML += fb;
+  /* Append feedback WITHOUT réécrire innerHTML (sinon les blancs déjà révélés
+     et leurs animations en cours seraient détruits) */
+  area.insertAdjacentHTML('beforeend', fb);
   /* Scroll to feedback */
   var cont = area.querySelector('.learn-feedback');
   if (cont) setTimeout(function(){ cont.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
